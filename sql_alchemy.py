@@ -76,7 +76,6 @@ class UserTable(Base):
 # session.commit()
 
 # *** SELECT ***
-
 # All Data
 results = session.query(TaskTable).all()
 print(results)
@@ -90,7 +89,7 @@ print(results)
 results = session.query(TaskTable.description, TaskTable.is_complete).all()
 print(results)
 
-# *** Filter (WHERE) ***
+# *** FILTER (WHERE) ***
 results = session.query(TaskTable).filter_by(is_complete=False).all()
 print(results)
 
@@ -102,7 +101,6 @@ results = session.query(TaskTable).filter(and_(between(TaskTable.priority, 1, 2)
 print(results)
 
 # *** SORT ***
-
 results = session.query(TaskTable).order_by(desc(TaskTable.priority)).all()
 print(results)
 
@@ -110,7 +108,6 @@ results = session.query(TaskTable).order_by(desc(func.length(TaskTable.descripti
 print(results)
 
 # *** GROUP BY ***
-
 results = session.query(TaskTable.is_complete, func.count(TaskTable.id_number)).group_by(TaskTable.is_complete).all()
 print(results)
 
@@ -118,7 +115,6 @@ results = session.query(TaskTable.is_complete, func.avg(TaskTable.priority)).gro
 print(results)
 
 # *** UPDATE ***
-
 # one() instead of first() if only one result expected
 record_to_update = session.query(TaskTable).filter(TaskTable.id_number == 2).one()
 record_to_update.is_complete = True
@@ -126,14 +122,12 @@ record_to_update.is_complete = True
 # session.commit()
 
 # *** DELETE ***
-
 record_to_delete = session.query(TaskTable).filter(TaskTable.id_number == 2).one()
 session.delete(record_to_delete)
 
 # session.commit()
 
 # *** TABLE DROP ***
-
 metadata = MetaData()
 table_to_drop = Table('tasks', metadata, autoload_with=engine)
 

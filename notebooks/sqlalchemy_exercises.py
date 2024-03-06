@@ -58,19 +58,18 @@ Napisz kod, który doda do tabeli wiersz z dataframe'a wykorzystując SQLAlchemy
 Napisz kod, który wyciągnie dane z dataframe'a na różne sposoby
 """
 
+# *** SELECT **
 results = session.query(CarTable).all()
 print(results)
 print(results[0].price)
 
-# One Row
 results = session.query(CarTable).first()
 print(results)
 
-# Columns
 results = session.query(CarTable.price, CarTable.brand).all()
 print(results)
 
-# Filter (where)
+# *** FILTER (WHERE) ***
 results = session.query(CarTable).filter(CarTable.price < 10_000).all()
 print(results)
 
