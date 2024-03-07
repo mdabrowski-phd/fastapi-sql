@@ -47,7 +47,7 @@ def create_task(body: TaskBody):
     insert_query_values = (body.description, body.priority, body.is_complete)
 
     cursor.execute(insert_query_template, insert_query_values)
-    new_task = cursor.fethone()
+    new_task = cursor.fetchone()
     conn.commit()
 
     conn.close()
@@ -82,10 +82,10 @@ def update_task_by_id(id_: int, body: TaskBody):
 
     update_query_template = f"""UPDATE tasks SET description=%s, priority=%s, is_complete=%s
                                 WHERE id=%s RETURNING *;"""
-    update_query_values = (body.description, body.priority, body.is_complete)
+    update_query_values = (body.description, body.priority, body.is_complete, id_)
 
     cursor.execute(update_query_template, update_query_values)
-    updated_task = cursor.fethone()
+    updated_task = cursor.fetchone()
     conn.commit()
 
     conn.close()

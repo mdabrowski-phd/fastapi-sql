@@ -10,6 +10,7 @@ Session = sessionmaker(bind=engine)
 Base = declarative_base()
 
 
+# SQL Alchemy
 def get_session():
     session = Session()
     try:

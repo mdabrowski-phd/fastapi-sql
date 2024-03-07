@@ -16,6 +16,7 @@ def get_db_credentials():
     }
 
 
+# SQL Alchemy
 def get_connection_string():
     credentials = get_db_credentials()
 
@@ -28,6 +29,7 @@ def get_connection_string():
     return f"postgresql://{user}:{password}@{host}:{port}/{database}"
 
 
+# psycopg2
 def connect_to_db():
     credentials = get_db_credentials()
     connection = psycopg2.connect(**credentials, cursor_factory=RealDictCursor)

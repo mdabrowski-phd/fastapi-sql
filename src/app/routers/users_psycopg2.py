@@ -86,7 +86,7 @@ def update_user_by_id(id_: int, body: UserBody):
 
     update_query_template = f"""UPDATE users SET username=%s, password=%s, is_admin=%s
                                 WHERE id=%s RETURNING *;"""
-    update_query_values = (body.username, body.password, body.is_admin)
+    update_query_values = (body.username, body.password, body.is_admin, id_)
 
     cursor.execute(update_query_template, update_query_values)
     updated_user = cursor.fethone()

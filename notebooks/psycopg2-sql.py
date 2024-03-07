@@ -1,16 +1,16 @@
 import psycopg2
 
 
-conn = psycopg2.connect(dbname="postgres", user="postgres", password="postgres", host='localhost')
+conn = psycopg2.connect(dbname="task_manager", user="postgres", password="postgres", host='localhost')
 cursor = conn.cursor()
 
-# create_query = """CREATE TABLE tasks(
-#     id SERIAL,
-#     description TEXT,
-#     priority SMALLINT,
-#     is_complete BOOLEAN
-# )
-# """
+create_query = """CREATE TABLE tasks(
+    id SERIAL,
+    description TEXT,
+    priority SMALLINT,
+    is_complete BOOLEAN
+)
+"""
 
 # create_query = """CREATE TABLE users(
 #     id SERIAL,

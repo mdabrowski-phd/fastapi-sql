@@ -1,10 +1,11 @@
 """
-venv: source ./venv/Scripts/activate
+venv: ./venv/Scripts/activate  --> then: 'cd src'
 local server: python3 -m uvicorn app.main:app --reload
 local endpoint: http://localhost:8000 (or http://127.0.0.1:8000)
 
 tutorial: https://fastapi.tiangolo.com/tutorial/
 API platform: https://www.postman.com/
+PostgreSQL + pgAdmin: https://www.enterprisedb.com/downloads/postgres-postgresql-downloads
 """
 
 from fastapi import FastAPI, status
