@@ -1,4 +1,5 @@
 """
+venv: source ./venv/Scripts/activate
 local server: python3 -m uvicorn app.main:app --reload
 local endpoint: http://localhost:8000 (or http://127.0.0.1:8000)
 
@@ -9,7 +10,8 @@ API platform: https://www.postman.com/
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
 
-from routers import tasks, users
+from app.routers import tasks, users
+# from app.routers import tasks_sqlalchemy, users_psycopg2
 
 
 app = FastAPI(

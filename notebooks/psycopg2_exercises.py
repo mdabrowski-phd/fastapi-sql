@@ -27,8 +27,8 @@ create_query = """CREATE TABLE cars(
 )
 """
 
-# cursor.execute(create_query)
-# conn.commit()
+cursor.execute(create_query)
+conn.commit()
 
 
 """ZADANIE 2
