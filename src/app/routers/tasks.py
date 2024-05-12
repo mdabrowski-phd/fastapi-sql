@@ -1,99 +1,130 @@
-from fastapi import APIRouter, HTTPException, status, Response
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, HTTPException, status, Response, Depends
 
-from app.models import TaskBody
-from db.utils import connect_to_db
+from app.models import TaskBody, TaskResponse, SortOrders, TokenData, \
+   GetSingleTaskResponse, GetAllTasksResponse, PostTaskResponse, PostTaskNoDetailResponse, PutTaskResponse
+
+from sqlalchemy import between, asc, desc
+from sqlalchemy.orm import Session
+from db.orm import get_session
+from db.models import TaskTable
+
+from app import oauth2
 
 
 router = APIRouter()
 
 
-@router.get("/tasks/", tags=["tasks"])
-def get_tasks():
-    conn, cursor = connect_to_db()
+@router.get("/tasks/", tags=["tasks"], response_model=GetAllTasksResponse)
+def get_tasks(session: Session = Depends(get_session), is_complete: bool | None = None,
+              min_priority: int = 1, max_priority: int = 5, sort_description: SortOrders = None):
 
-    cursor.execute("SELECT * FROM tasks")
-    tasks_data = cursor.fetchall()
+    tasks_data = session.query(TaskTable)
 
-    conn.close()
-    cursor.close()
+    if is_complete is not None:
+        tasks_data = tasks_data.filter_by(is_complete=is_complete)
 
-    return JSONResponse(status_code=status.HTTP_200_OK, content={"result": tasks_data})
+    tasks_data = tasks_data.filter(between(TaskTable.priority, min_priority, max_priority))
+
+    if sort_description is not None:
+        if sort_description == SortOrders.ASCENDING:
+            sort_func = asc
+        elif sort_description == SortOrders.DESCENDING:
+            sort_func = desc
+        else:
+            raise Exception("Invalid sort order")
+
+        tasks_data = tasks_data.order_by(sort_func(TaskTable.description))
+
+    tasks_data = tasks_data.all()
+
+    tasks_data = [
+        TaskResponse(id_=task.id_number,
+                     description=task.description,
+                     priority=task.priority,
+                     is_complete=task.is_complete
+                     )
+        for task in tasks_data
+    ]
+
+    return {"result": tasks_data}
 
 
-@router.get("/tasks/{id_}", tags=["tasks"])
-def get_task_by_id(id_: int):
-    conn, cursor = connect_to_db()
-
-    cursor.execute("SELECT * FROM tasks WHERE id=%s", (id_,))
-    target_task = cursor.fetchall()
-
-    conn.close()
-    cursor.close()
+@router.get("/tasks/{id_}", tags=["tasks"], response_model=GetSingleTaskResponse)
+def get_task_by_id(id_: int, session: Session = Depends(get_session)):
+    target_task = session.query(TaskTable).filter_by(id_number=id_).first()
 
     if not target_task:
         message = {"error": f"Task with id {id_} does not exist"}
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
 
-    return JSONResponse(status_code=status.HTTP_200_OK, content={"result": target_task})
+    target_task = TaskResponse(id_=target_task.id_number,
+                               description=target_task.description,
+                               priority=target_task.priority,
+                               is_complete=target_task.is_complete
+                               )
+
+    return {"result": target_task}
 
 
-@router.post("/tasks/", status_code=status.HTTP_201_CREATED, tags=["tasks"])
-def create_task(body: TaskBody):
-    conn, cursor = connect_to_db()
+@router.post("/tasks/", status_code=status.HTTP_201_CREATED, tags=["tasks"],
+             response_model=PostTaskResponse | PostTaskNoDetailResponse)
+def create_task(body: TaskBody, session: Session = Depends(get_session),
+                show_task: bool = True,
+                user_data: TokenData = Depends(oauth2.get_current_user)):
 
-    insert_query_template = f"""INSERT INTO tasks (description, priority, is_complete)
-                                VALUES (%s, %s, %s) RETURNING *;"""
-    insert_query_values = (body.description, body.priority, body.is_complete)
+    task_dict = body.model_dump()
+    new_task = TaskTable(**task_dict)
 
-    cursor.execute(insert_query_template, insert_query_values)
-    new_task = cursor.fetchone()
-    conn.commit()
+    session.add(new_task)
+    session.commit()
+    session.refresh(new_task)
 
-    conn.close()
-    cursor.close()
-
-    return {"message": "New task added", "details": new_task}
+    new_task = TaskResponse(id_=new_task.id_number,
+                            description=new_task.description,
+                            priority=new_task.priority,
+                            is_complete=new_task.is_complete
+                            )
+    if show_task:
+        return {"message": f"New task added by user {user_data.user_id}", "details": new_task}
+    else:
+        return {"message": f"New task added by user {user_data.user_id}"}
 
 
 @router.delete("/tasks/{id_}", tags=["tasks"])
-def delete_task_by_id(id_: int):
-    conn, cursor = connect_to_db()
+def delete_task_by_id(id_: int, session: Session = Depends(get_session),
+                      _: TokenData = Depends(oauth2.get_current_user)):
 
-    delete_query = f"DELETE FROM tasks WHERE id=%s RETURNING *;"
-    cursor.execute(delete_query, (id_,))
+    deleted_task = session.query(TaskTable).filter_by(id_number=id_).first()
 
-    deleted_post = cursor.fetchone()
-    conn.commit()
-
-    conn.close()
-    cursor.close()
-
-    if deleted_post is None:
+    if not deleted_task:
         message = {"error": f"Task with id {id_} does not exist"}
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
+
+    session.delete(deleted_task)
+    session.commit()
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.put("/tasks/{id_}", tags=["tasks"])
-def update_task_by_id(id_: int, body: TaskBody):
-    conn, cursor = connect_to_db()
+@router.put("/tasks/{id_}", tags=["tasks"], response_model=PutTaskResponse)
+def update_task_by_id(id_: int, body: TaskBody, session: Session = Depends(get_session),
+                      _: TokenData = Depends(oauth2.get_current_user)):
 
-    update_query_template = f"""UPDATE tasks SET description=%s, priority=%s, is_complete=%s
-                                WHERE id=%s RETURNING *;"""
-    update_query_values = (body.description, body.priority, body.is_complete, id_)
+    filter_query = session.query(TaskTable).filter_by(id_number=id_)
 
-    cursor.execute(update_query_template, update_query_values)
-    updated_task = cursor.fetchone()
-    conn.commit()
-
-    conn.close()
-    cursor.close()
-
-    if updated_task is None:
+    if not filter_query.first():
         message = {"error": f"Task with id {id_} does not exist"}
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
 
-    message = {"message": f"Task with id {id_} updated", "new_value": updated_task}
-    return JSONResponse(status_code=status.HTTP_200_OK, content=message)
+    filter_query.update(body.model_dump())
+    session.commit()
+
+    updated_task = filter_query.first()
+
+    updated_task = TaskResponse(id_=updated_task.id_number,
+                                description=updated_task.description,
+                                priority=updated_task.priority,
+                                is_complete=updated_task.is_complete
+                                )
+
+    return {"message": f"Task with id {id_} updated", "new_value": updated_task}

@@ -1,7 +1,6 @@
 """
-venv: ./venv/Scripts/activate  --> then: 'cd src'
-local server: python3 -m uvicorn app.main:app --reload
-local endpoint: http://localhost:8000 (or http://127.0.0.1:8000)
+venv: ./venv/Scripts/activate  --> then: 'cd src/app'
+local server: fastapi dev main.py (fastapi run main.py)
 
 tutorial: https://fastapi.tiangolo.com/tutorial/
 API platform: https://www.postman.com/
@@ -11,8 +10,7 @@ PostgreSQL + pgAdmin: https://www.enterprisedb.com/downloads/postgres-postgresql
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
 
-from app.routers import tasks, users
-# from app.routers import tasks_sqlalchemy, users_psycopg2
+from app.routers import tasks, users, auth
 
 
 app = FastAPI(
@@ -24,6 +22,7 @@ app = FastAPI(
 )
 app.include_router(tasks.router)
 app.include_router(users.router)
+app.include_router(auth.router)
 
 
 @app.get("/", description="Test endpoint for demonstration purposes")
