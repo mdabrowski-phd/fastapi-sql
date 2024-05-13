@@ -4,11 +4,13 @@ from fastapi import HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 
 from app.models import TokenData
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+load_dotenv()
 
 SECRET_KEY = os.environ["AUTH_SECRET_KEY"]
 ALGORITHM = os.environ["AUTH_ALGORITHM"]
@@ -34,10 +36,12 @@ def verify_access_token(token: str, credentials_exception: HTTPException):
     try:
         payload = jwt.decode(token, SECRET_KEY, ALGORITHM)
         id_ = payload.get("user_id")
+        is_admin = payload.get("is_admin")
+
         if id_ is None:
             raise credentials_exception
 
-        token_data = TokenData(user_id=id_)
+        token_data = TokenData(user_id=id_, is_admin=is_admin)
         return token_data
 
     except JWTError:
