@@ -30,7 +30,7 @@ app.include_router(auth.router)
 app.include_router(frontend.router)
 
 
-@app.get("/", description="Test endpoint for demonstration purposes")
+@app.get("/hello/", description="Test endpoint for demonstration purposes")
 def root():
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Hello world"})
 
